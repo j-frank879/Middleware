@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UAParser;
 
 namespace Middleware
 {
@@ -41,24 +42,65 @@ namespace Middleware
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            app.Use(async (context, next) => {
-                string user_agent = context.Request.Headers["User-Agent"].ToString();
-            await context.Response.WriteAsync("<p>" + user_agent +"</p>");
-                await next();
-            });
+            app.Map("/Privacy", Browser);
+            app.UseWhen(context => (context.Request.Query.ContainsKey("Privacy")),
+                              (IApplicationBuilder applicationBuilder) =>
+
+                              {
+                                  app.Use(async (context, next) =>
+                                  {
+                                      string user_agent = context.Request.Headers["User-Agent"].ToString();
+                                      await context.Response.WriteAsync("<p>" + user_agent + "</p>");
+
+                                  });
+                              });
+
+
             app.UseHttpsRedirection();
-            
+
             app.UseStaticFiles();
 
             app.UseRouting();
+           
+            
 
             app.UseAuthorization();
-            
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRazorPages();
             });
+           
+        }
+        private static void Komunikat(IApplicationBuilder app)
+        {
             
+
+        }
+
+        private static void Browser(IApplicationBuilder app)
+        {
+            app.Use(async (context, next) =>
+            {
+                string user_agent = context.Request.Headers["User-Agent"].ToString();
+                var uaParser = Parser.GetDefault();
+                ClientInfo c = uaParser.Parse(user_agent);
+                //Edge, EdgeChromium i IE
+                string browser = c.UA.Family;
+                if (browser.Contains("Edge") || browser.Contains("IE"))
+                {
+                    await context.Response.WriteAsync("Przegl¹darka nie jest obs³ugiwana");
+                }
+                else
+                {
+                    
+                    
+                    
+                    
+                }
+
+            });
+
         }
     }
 }
